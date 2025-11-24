@@ -22,6 +22,7 @@ Providing real-time logs and user feedback
 This is a GitHub-safe sample version — all sensitive information (IP, credentials, client structures, production SQL) has been removed and replaced with placeholders/environment variables.
 
  Key Features
+ 
 🔹 1. Interactive Tkinter UI
 
 Load Excel master data
