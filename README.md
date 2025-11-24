@@ -1,9 +1,9 @@
 # Automated-SLA-Alarm-Reporting-System
-📘 SLA & Alarm Data Processing Tool (Sample Project)
+## SLA & Alarm Data Processing Tool (Sample Project)
 
 A sanitized demonstration project built with Python, Tkinter, Pandas & PostgreSQL
 
-🚀 Overview
+# Overview
 
 This project is a desktop-based data processing tool that automates key SLA (Service-Level Agreement) data workflows such as:
 
@@ -21,7 +21,7 @@ Providing real-time logs and user feedback
 
 This is a GitHub-safe sample version — all sensitive information (IP, credentials, client structures, production SQL) has been removed and replaced with placeholders/environment variables.
 
-🎯 Key Features
+ Key Features
 🔹 1. Interactive Tkinter UI
 
 Load Excel master data
@@ -75,7 +75,7 @@ Error handling
 
 Everything visible inside the UI.
 
-🧩 Tech Stack
+# Tech Stack
 Component	Technology
 GUI	Tkinter
 Backend	Python
@@ -109,7 +109,7 @@ python sla_app.py
 
 GUI will launch automatically.
 
-🛠️ How It Works Internally
+# How It Works Internally
 Step 1 – Load Excel
 
 User uploads a file containing meter numbers.
