@@ -1,0 +1,170 @@
+"""
+Sample SLA & Alarm Data Processing Application
+----------------------------------------------
+Sanitized Demo Version for GitHub
+Author: Manish
+Description:
+A Tkinter-based desktop tool that:
+ - Loads Excel meter list
+ - Filters data by user selections
+ - Connects to a PostgreSQL DB (credentials via environment variables)
+ - Executes queries in batches
+ - Saves results to Excel/CSV
+ - Generates processed SLA metrics
+
+All sensitive information removed.
+"""
+
+import os
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+import pandas as pd
+import psycopg2
+import datetime
+
+class SLAToolApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("SLA Data Processing Tool (Sample)")
+        self.root.geometry("1000x600")
+
+        self.excel_df = None
+        self.filtered_df = None
+
+        self.build_ui()
+
+    # ------------------------------------------------------
+    # UI LAYOUT
+    # ------------------------------------------------------
+    def build_ui(self):
+        frame = tk.Frame(self.root)
+        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        tk.Button(frame, text="Load Excel File", command=self.load_excel,
+                  bg="#2196F3", fg="white", font=("Arial", 12, "bold")).pack(pady=10)
+
+        tk.Button(frame, text="Filter Data", command=self.filter_data,
+                  bg="#4CAF50", fg="white", font=("Arial", 12, "bold")).pack(pady=10)
+
+        tk.Button(frame, text="Fetch SLA Data", command=self.fetch_sla_data,
+                  bg="#FF9800", fg="white", font=("Arial", 12, "bold")).pack(pady=10)
+
+        self.log_box = tk.Text(frame, height=20, bg="black", fg="white")
+        self.log_box.pack(fill=tk.BOTH, expand=True, pady=10)
+
+    # ------------------------------------------------------
+    # LOGGING
+    # ------------------------------------------------------
+    def log(self, msg):
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        self.log_box.insert(tk.END, f"[{timestamp}] {msg}\n")
+        self.log_box.see(tk.END)
+
+    # ------------------------------------------------------
+    # LOAD EXCEL
+    # ------------------------------------------------------
+    def load_excel(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Excel Files", "*.xlsx *.xls")]
+        )
+        if not file_path:
+            return
+        
+        try:
+            self.excel_df = pd.read_excel(file_path)
+            self.log(f"Loaded Excel with {len(self.excel_df)} rows")
+        except Exception as e:
+            self.log(f"Error loading Excel: {e}")
+
+    # ------------------------------------------------------
+    # FILTER DATA
+    # ------------------------------------------------------
+    def filter_data(self):
+        if self.excel_df is None:
+            self.log("Please load Excel first.")
+            return
+        
+        if "meter_number" not in self.excel_df.columns:
+            self.log("Excel must contain 'meter_number' column.")
+            return
+        
+        # Sample filter: remove empty meter numbers
+        self.filtered_df = self.excel_df[self.excel_df["meter_number"].notna()]
+        self.log(f"Filtered data → {len(self.filtered_df)} valid meter numbers")
+
+    # ------------------------------------------------------
+    # DB CONNECTION (PLACEHOLDER)
+    # ------------------------------------------------------
+    def connect_db(self):
+        try:
+            conn = psycopg2.connect(
+                host=os.getenv("DB_HOST", "localhost"),
+                port=os.getenv("DB_PORT", "5432"),
+                database=os.getenv("DB_NAME", "sample_db"),
+                user=os.getenv("DB_USER", "user"),
+                password=os.getenv("DB_PASSWORD", "password"),
+            )
+            return conn.cursor(), conn
+        except Exception as e:
+            self.log(f"Database connection failed: {e}")
+            return None, None
+
+    # ------------------------------------------------------
+    # SQL QUERY GENERATION
+    # ------------------------------------------------------
+    def build_query(self, meters):
+        meter_list = ",".join([f"'{m}'" for m in meters])
+        return f"""
+            SELECT meter_number, sample_col1, sample_col2
+            FROM sample_table
+            WHERE meter_number IN ({meter_list})
+        """
+
+    # ------------------------------------------------------
+    # EXECUTE QUERY (BATCH PROCESSING)
+    # ------------------------------------------------------
+    def fetch_sla_data(self):
+        if self.filtered_df is None:
+            self.log("No filtered data available.")
+            return
+        
+        meters = self.filtered_df["meter_number"].unique().tolist()
+
+        BATCH_SIZE = 500
+        all_results = []
+
+        self.log(f"Fetching SLA data for {len(meters)} meters...")
+
+        for i in range(0, len(meters), BATCH_SIZE):
+            batch = meters[i:i+BATCH_SIZE]
+            query = self.build_query(batch)
+
+            cur, conn = self.connect_db()
+            if cur is None:
+                return
+
+            try:
+                cur.execute(query)
+                rows = cur.fetchall()
+                all_results.extend(rows)
+                self.log(f"Batch {i//BATCH_SIZE + 1}: {len(rows)} rows received")
+            except Exception as e:
+                self.log(f"Query error: {e}")
+            finally:
+                cur.close()
+                conn.close()
+
+        df = pd.DataFrame(all_results, columns=["meter_number", "col1", "col2"])
+        output_file = f"SLA_Output_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        df.to_excel(output_file, index=False)
+
+        self.log(f"SLA data saved to {output_file}")
+
+
+# ------------------------------------------------------
+# MAIN APP RUN
+# ------------------------------------------------------
+if __name__ == "__main__":
+    root = tk.Tk()
+    SLAToolApp(root)
+    root.mainloop()
